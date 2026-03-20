@@ -114,6 +114,9 @@ export class Player {
   }
 
   clampCurrentTimeToRenderItemsRange(): void {
+    if (this.renderItems.length === 0) {
+      return;
+    }
     const lastRenderItem = this.renderItems[this.renderItems.length - 1];
     if (this.currentTime < this.renderItems[0].absoluteStart) {
       this.updateCurrentTime(this.renderItems[0].absoluteStart);
@@ -123,6 +126,10 @@ export class Player {
   }
 
   async play(): Promise<void> {
+    if (this.renderItems.length === 0) {
+      this.store.dispatch(setPlay(false));
+      return;
+    }
     this.clampCurrentTimeToRenderItemsRange();
 
     const currentRenderItem = this.getCurrentRenderItem();

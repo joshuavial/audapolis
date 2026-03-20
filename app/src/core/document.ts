@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { readFileSync, createWriteStream } from 'fs';
+import { readFileSync, renameSync, unlinkSync, writeFileSync, openSync, fsyncSync, closeSync } from 'fs';
 import { basename } from 'path';
 import { memoizedParagraphItems } from '../state/editor/selectors';
 import { v4 as uuidv4 } from 'uuid';
@@ -368,15 +368,30 @@ export function serializeDocument(document: Document): JSZip {
   return zip;
 }
 
-export function serializeDocumentToFile(document: Document, path: string): Promise<void> {
+export async function serializeDocumentToFile(document: Document, path: string): Promise<void> {
   const zip = serializeDocument(document);
-  return new Promise((resolve, reject) => {
-    zip
-      .generateNodeStream({ type: 'nodebuffer', streamFiles: true })
-      .pipe(createWriteStream(path))
-      .on('finish', resolve)
-      .on('error', reject);
-  });
+  const tempPath = `${path}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    const buffer = await zip.generateAsync({ type: 'nodebuffer', streamFiles: true });
+    writeFileSync(tempPath, buffer);
+
+    // Force the temp file contents to disk before the atomic rename.
+    const fd = openSync(tempPath, 'r');
+    try {
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+
+    renameSync(tempPath, path);
+  } catch (error) {
+    try {
+      unlinkSync(tempPath);
+    } catch (_cleanupError) {
+      // Ignore cleanup failures. The previous save is still untouched.
+    }
+    throw error;
+  }
 }
 
 ///

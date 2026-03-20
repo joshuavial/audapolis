@@ -108,6 +108,20 @@ export function isSeperateSubtitleTrackSupported(outputPath: string): boolean {
   }
 }
 
+function materializeSources(
+  tempdir: string,
+  sources: Record<string, Source>
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(sources).map(([sourceId, source]) => {
+      const sourcePath = path.join(tempdir, `source-${sourceId}`);
+      console.log('materialize source', sourceId, sourcePath, source.fileContents.byteLength);
+      fs.writeFileSync(sourcePath, Buffer.from(source.fileContents));
+      return [sourceId, sourcePath];
+    })
+  );
+}
+
 export async function exportVideo(
   content: RenderItem[],
   sources: Record<string, Source>,
@@ -117,6 +131,17 @@ export async function exportVideo(
   progressCallback: ProgressCallback = () => {}
 ): Promise<void> {
   const tempdir = await getTempDir();
+  console.log(
+    'exportVideo tempdir',
+    tempdir,
+    'output',
+    outputPath,
+    'parts',
+    content.length,
+    'sources',
+    Object.keys(sources).length
+  );
+  const sourcePaths = materializeSources(tempdir, sources);
 
   let diskSubtitles = null;
   if (subtitles !== null) {
@@ -134,9 +159,8 @@ export async function exportVideo(
       size: `${targetResolution.x}x${targetResolution.y}`,
     });
     if ('source' in part) {
-      const source = sources[part.source];
-      const source_path = path.join(tempdir, `part${i}-source`);
-      fs.writeFileSync(source_path, new Buffer(source.fileContents));
+      const source_path = sourcePaths[part.source];
+      console.log('exportVideo use source', i, part.source, source_path);
       const input = new FFmpegInput(source_path, {
         ss: part.sourceStart.toString(),
         t: part.length.toString(),
@@ -157,6 +181,7 @@ export async function exportVideo(
   await combineVideoParts(files, diskSubtitles, targetResolution, outputPath, (p) =>
     progressCallback(p / total)
   );
+  console.log('exportVideo done', outputPath);
   fs.rmdirSync(tempdir, { recursive: true });
 }
 
@@ -205,15 +230,25 @@ export async function exportAudio(
   progressCallback: ProgressCallback = () => {}
 ): Promise<void> {
   const tempdir = await getTempDir();
+  console.log(
+    'exportAudio tempdir',
+    tempdir,
+    'output',
+    outputPath,
+    'parts',
+    content.length,
+    'sources',
+    Object.keys(sources).length
+  );
+  const sourcePaths = materializeSources(tempdir, sources);
 
   let total = 0;
 
   const files = content.map((part, i) => {
     total += part.length;
     if ('source' in part) {
-      const source = sources[part.source];
-      const source_path = path.join(tempdir, `part${i}-source`);
-      fs.writeFileSync(source_path, new Buffer(source.fileContents));
+      const source_path = sourcePaths[part.source];
+      console.log('exportAudio use source', i, part.source, source_path);
       return new FFmpegInput(source_path, {
         ss: part.sourceStart.toString(),
         t: part.length.toString(),
@@ -226,6 +261,7 @@ export async function exportAudio(
   });
 
   await combineAudioParts(files, outputPath, (p) => progressCallback(p / total));
+  console.log('exportAudio done', outputPath);
   fs.rmdirSync(tempdir, { recursive: true });
 }
 

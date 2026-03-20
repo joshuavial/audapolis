@@ -12,7 +12,11 @@ if (args.length < 1 || args.length > 2) {
 nlf.find({}, function (err, data) {
   const license_parts = [];
   if (args[1]) {
-    license_parts.push(fs.readFileSync(args[1]));
+    if (fs.existsSync(args[1])) {
+      license_parts.push(fs.readFileSync(args[1]));
+    } else {
+      console.warn(`Skipping missing preamble file: ${args[1]}`);
+    }
   }
   for (const item of data) {
     if (item.name === 'audapolis') {

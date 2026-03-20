@@ -80,11 +80,24 @@ export function ExportDocumentDialog(): JSX.Element {
         popupState == 'document'
           ? state.editor.present.document
           : selectionDocument(state.editor.present);
+      console.log(
+        'export start',
+        formState.type,
+        formState.path,
+        'items',
+        exportDocument.content.length,
+        'sources',
+        Object.keys(exportDocument.sources).length
+      );
       await exportFnRef
         .current(exportDocument, formState.path, (p) => {
+          console.log('export progress', formState.type, p);
           dispatch(setExportState({ running: true, progress: p }));
         })
-        .finally(() => dispatch(setExportState({ running: false, progress: 1 })));
+        .finally(() => {
+          console.log('export finished/finally', formState.type, formState.path);
+          dispatch(setExportState({ running: false, progress: 1 }));
+        });
     };
 
     toast

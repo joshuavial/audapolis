@@ -48,12 +48,26 @@ function editorReducer(state: EditorState | undefined, action: AnyAction): Edito
     });
     const lintResult = memoizedLintDocumentContent(draft.document.content);
     if (!lintResult.pass) {
-      if (process.env.NODE_ENV == 'development') {
-        alert(lintResult.message());
-        console.error('DOCUMENT LINTING FAILED!', lintResult.message());
-      } else {
-        console.error('DOCUMENT LINTING FAILED!', lintResult.message());
-      }
+      const firstBrokenIndex = draft.document.content.findIndex((item, idx, content) => {
+        if (idx === 0) {
+          return item.type !== 'paragraph_start';
+        }
+        const prev = content[idx - 1];
+        return prev.type !== 'paragraph_end' && item.type === 'paragraph_start';
+      });
+      const context = draft.document.content
+        .slice(Math.max(0, firstBrokenIndex - 3), Math.max(0, firstBrokenIndex - 3) + 8)
+        .map((item) => item.type);
+      console.error(
+        'DOCUMENT LINTING FAILED!',
+        lintResult.message(),
+        'action=',
+        action.type,
+        'index=',
+        firstBrokenIndex,
+        'context=',
+        context.join(', ')
+      );
     }
   });
 }

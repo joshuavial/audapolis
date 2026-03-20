@@ -1,8 +1,4 @@
 import { app, BrowserWindow, session, dialog } from 'electron';
-import installExtension, {
-  REDUX_DEVTOOLS,
-  REACT_DEVELOPER_TOOLS,
-} from 'electron-devtools-installer';
 import { autoUpdater } from 'electron-updater';
 
 initMainProcessLog();
@@ -45,13 +41,7 @@ export const createWindow = (): void => {
   });
 
   if (process.env.NODE_ENV === 'development') {
-    installExtension([REDUX_DEVTOOLS, REACT_DEVELOPER_TOOLS])
-      .then((name: string) => console.log(`Added Extension:  ${name}`))
-      .catch((err: string) => console.log('An error occurred: ', err))
-      .finally(() => {
-        window.webContents.openDevTools();
-        window.loadURL(import.meta.env.VITE_DEV_SERVER_URL);
-      });
+    window.loadURL(import.meta.env.VITE_DEV_SERVER_URL);
   } else if (isRunningInTest()) {
     window.loadURL(import.meta.env.VITE_DEV_SERVER_URL);
   } else {
