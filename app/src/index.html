@@ -4,5 +4,29 @@
 </head>
 <body>
   <div id="root"></div>
+  <script>
+    // Polyfill Array.prototype.at for Electron 13 (Chromium 91)
+    if (!Array.prototype.at) {
+      function normalizeIndex(length, index) {
+        return index < 0 ? Math.max(length + index, 0) : index;
+      }
+      [Array, Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
+       Int32Array, Uint32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array
+      ].forEach(function(C) {
+        if (C && !C.prototype.at) {
+          Object.defineProperty(C.prototype, 'at', {
+            value: function(i) { return this[normalizeIndex(this.length, Number(i) || 0)]; },
+            writable: true, configurable: true
+          });
+        }
+      });
+      if (!String.prototype.at) {
+        Object.defineProperty(String.prototype, 'at', {
+          value: function(i) { return this.charAt(normalizeIndex(this.length, Number(i) || 0)); },
+          writable: true, configurable: true
+        });
+      }
+    }
+  </script>
   <script src="./index.tsx" type="module"></script>
 </body>
