@@ -21,6 +21,9 @@ export default defineConfig({
   root: __dirname,
   base: '',
   plugins: [reactRefresh(), commonjsExternals({ externals: commonjsPackages })],
+  server: {
+    host: '127.0.0.1',
+  },
   build: {
     outDir: '../build/renderer_process/',
     emptyOutDir: true,

@@ -22,7 +22,7 @@ const setupMainPackageWatcher = (viteDevServer) => {
   // Write a value to an environment variable to pass it to the main process.
   {
     const protocol = `http${viteDevServer.config.server.https ? 's' : ''}:`;
-    const host = viteDevServer.config.server.host || 'localhost';
+    const host = viteDevServer.config.server.host || '127.0.0.1';
     const port = viteDevServer.config.server.port;
     const path = '/';
     process.env.VITE_DEV_SERVER_URL = `${protocol}//${host}:${port}${path}`;
